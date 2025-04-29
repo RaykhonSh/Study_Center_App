@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+    <title>Add Group</title>
+</head>
+<body>
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0" th:text="${groupId}?'Update Group':'Add New Group'"></h5>
+                    <a href="/group" class="btn btn-secondary btn-sm">Back</a>
+                </div>
+                <div class="card-body">
+                    <form th:action="${groupId != null} ? '/group/update/' + ${groupId} : '/group'"
+                         method="post">
+                    <div class="mb-3">
+                            <input type="text" name="name"
+                                   th:value="${groupId!=null ? group.name:''}"
+                                   placeholder="Enter group name..."
+                                   required autofocus class="form-control">
+                        </div>
+                        <div class="mb-3" th:if="${errorMessage}">
+                            <span class="text-danger" th:text="${errorMessage}"></span>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Save</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

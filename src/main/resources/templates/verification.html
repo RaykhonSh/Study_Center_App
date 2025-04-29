@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Email Verification</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #f8f9fa; }
+        .verification-container {
+            max-width: 450px; margin: 80px auto;
+            padding: 30px; background: #fff;
+            border-radius: 16px; box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        .code-input { font-size:24px; letter-spacing:12px; text-align:center; }
+        .timer { font-weight:bold; color:#dc3545; }
+        .message-box { min-height: 1.5em; }
+    </style>
+</head>
+<body>
+<div class="verification-container text-center">
+    <h4>Email Verification</h4>
+    <div id="messageBox" class="message-box text-danger mb-3">
+        Please enter the code sent to your email.
+    </div>
+
+    <input
+            id="codeInput"
+            class="form-control code-input mb-3"
+            type="text"
+            maxlength="5"
+            inputmode="numeric"
+            pattern="\d*"
+            placeholder="_____"
+            oninput="this.value=this.value.replace(/\D/g,'')"
+            autofocus
+    />
+
+    <button id="verifyBtn" class="btn btn-primary w-100 mb-2">Verify</button>
+    <div class="mb-3">
+        <span id="timer" class="timer">00:00</span>
+    </div>
+    <button id="resendBtn" class="btn btn-link">Resend Code</button>
+</div>
+
+<script th:inline="javascript">
+    // server-dan inject qilingan boshlang'ich soniya
+    let timeLeft = /*[[${remainingSeconds}]]*/ 60;
+    let attemptsLeft = /*[[${session.attemptsLeft}]]*/ 3;
+
+    const msgBox   = document.getElementById('messageBox');
+    const timerEl  = document.getElementById('timer');
+    const verifyBtn= document.getElementById('verifyBtn');
+    const resendBtn= document.getElementById('resendBtn');
+    const codeIn   = document.getElementById('codeInput');
+
+    // — timerni yangilash funksiyasi
+    function updateTimer() {
+        const m = String(Math.floor(timeLeft/60)).padStart(2,'0');
+        const s = String(timeLeft%60).padStart(2,'0');
+        timerEl.textContent = `${m}:${s}`;
+        if (timeLeft <= 0) {
+            verifyBtn.disabled = true;
+            msgBox.textContent='Your code has expired. Please resend.';
+            codeIn.blur();
+        }
+    }
+
+    // — per-second kamaytirish
+    const countdown = setInterval(() => {
+        if (timeLeft > 0) {
+            timeLeft--;
+            updateTimer();
+        }
+    }, 1000);
+    updateTimer();
+
+    // Handle Enter key to trigger verification
+    codeIn.addEventListener('keydown',(e)=>{
+        if (e.key==='Enter'){
+            e.preventDefault();
+            verifyBtn.click();
+        }
+    })
+    // — Verify tugmasi AJAX
+    verifyBtn.addEventListener('click', async () => {
+        if (attemptsLeft <= 0 || timeLeft <= 0) return;
+
+        const code = codeIn.value;
+        if (code.length !== 5) {
+            msgBox.textContent = 'Please enter 5 digits.';
+            codeIn.value='';
+            codeIn.focus();
+            return;
+        }
+
+        const res = await fetch('/verification/verify', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({code})
+        });
+        const data = await res.json();
+
+        msgBox.textContent = data.message;
+        codeIn.value='';
+        codeIn.focus();
+        if (data.success) {
+            window.location.href = '/login';
+            return;
+        }
+
+        // yangilash
+        attemptsLeft   = data.attemptsLeft   ?? 0;
+        timeLeft       = data.remainingSeconds ?? 0;
+        if (attemptsLeft <= 0 || timeLeft <= 0) {
+            verifyBtn.disabled = true;
+            codeIn.blur();
+        }
+    });
+
+    // — Resend tugmasi AJAX
+    resendBtn.addEventListener('click', async () => {
+        const res = await fetch('/verification/resend', { method:'POST' });
+        const data = await res.json();
+
+        timeLeft     = data.remainingSeconds;
+        attemptsLeft = data.attemptsLeft;
+        msgBox.textContent = data.message;
+
+        verifyBtn.disabled = false;
+        codeIn.value='';
+        codeIn.focus();
+        updateTimer();
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+    <!-- Font Awesome CSS for icons (v6) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+          crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <title>Register</title>
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .card {
+            margin-top: 50px;
+        }
+    </style>
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+</head>
+<body>
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header text-center">
+                    <h4>Register</h4>
+                </div>
+                <div class="card-body">
+                    <form th:action="@{/register}" method="post"
+                          th:object="${userDto}"
+                          onsubmit="return validateForm()">
+                        <!-- First Name -->
+                        <div class="mb-3">
+                            <label for="firstName" class="form-label">First Name</label>
+                            <input type="text" id="firstName" name="firstName" placeholder="Enter first name..."
+                                   class="form-control" th:field="*{firstName}" required>
+                            <!-- Xatolik haqida xabar -->
+                            <div class="text-danger" th:if="${#fields.hasErrors('firstName')}"
+                                 th:errors="*{firstName}"></div>
+                        </div>
+                        <!-- Last Name -->
+                        <div class="mb-3">
+                            <label for="lastName" class="form-label">Last Name</label>
+                            <input type="text" id="lastName" name="lastName" placeholder="Enter last name..."
+                                   class="form-control" th:field="*{lastName}" required>
+                            <div class="text-danger" th:if="${#fields.hasErrors('lastName')}"
+                                 th:errors="*{lastName}"></div>
+                        </div>
+                        <!-- Email -->
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" id="email" name="email" placeholder="Enter email..."
+                                   class="form-control" th:field="*{email}" required>
+                            <div class="text-danger" th:if="${#fields.hasErrors('email')}"
+                                 th:errors="*{email}"></div>
+                        </div>
+                        <!-- Password -->
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <div class="input-group">
+                                <input type="password" id="password" name="password" placeholder="Enter password..."
+                                       class="form-control" th:field="*{password}" required>
+                                <span class="input-group-text">
+                    <i class="fa-solid fa-eye" id="togglePassword" style="cursor: pointer;"></i>
+                  </span>
+                            </div>
+                            <div class="text-danger" th:if="${#fields.hasErrors('password')}"
+                                 th:errors="*{password}"></div>
+                        </div>
+                        <!-- Password Repeat -->
+                        <div class="mb-3">
+                            <label for="passwordRepeat" class="form-label">Repeat Password</label>
+                            <div class="input-group">
+                                <input type="password" id="passwordRepeat" name="passwordRepeat" placeholder="Repeat password..."
+                                       class="form-control" th:field="*{passwordRepeat}" required>
+                                <span class="input-group-text">
+                    <i class="fa-solid fa-eye" id="togglePasswordRepeat" style="cursor: pointer;"></i>
+                  </span>
+                            </div>
+                            <div class="text-danger" th:if="${#fields.hasErrors('passwordRepeat')}"
+                                 th:errors="*{passwordRepeat}"></div>
+                        </div>
+<!--                        recaptcha-->
+                        <div class="mb-3">
+                            <div class="g-recaptcha m-3 row justify-content-center"
+                                 th:data-sitekey="${@environment.getProperty('recaptcha.key')}"></div>
+                        </div>
+                        <div class="text-danger" th:if="${captchaError}" th:text="${captchaError}"></div>
+                        <!-- Register Button -->
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Register</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Script for toggling password visibility -->
+<script type="text/javascript">
+    const togglePassword = document.querySelector('#togglePassword');
+    const password = document.querySelector('#password');
+
+    togglePassword.addEventListener('click', function () {
+        const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+        password.setAttribute('type', type);
+        // Toggle the icon class between eye and eye-slash
+        this.classList.toggle('fa-eye-slash');
+    });
+
+    const togglePasswordRepeat = document.querySelector('#togglePasswordRepeat');
+    const passwordRepeat = document.querySelector('#passwordRepeat');
+
+    togglePasswordRepeat.addEventListener('click', function () {
+        const type = passwordRepeat.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordRepeat.setAttribute('type', type);
+        this.classList.toggle('fa-eye-slash');
+    });
+
+    function validateForm(){
+        if (grecaptcha.getResponse()){
+            return true;
+        }else {
+            alert("Please prove that you're not robot!!!")
+            return false;
+        }
+    }
+</script>
+</body>
+</html>
