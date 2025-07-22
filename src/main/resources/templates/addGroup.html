@@ -19,6 +19,7 @@
                 <div class="card-body">
                     <form th:action="${groupId != null} ? '/group/update/' + ${groupId} : '/group'"
                          method="post">
+                        <input type="hidden" name="_csrf" th:value="${_csrf.getToken()}">
                     <div class="mb-3">
                             <input type="text" name="name"
                                    th:value="${groupId!=null ? group.name:''}"

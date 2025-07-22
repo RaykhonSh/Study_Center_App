@@ -1,13 +1,9 @@
-package uz.pdp.studycenter_app.service;
+package uz.pdp.studycenter_app.recaptcha;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.http.server.reactive.HttpHandler;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -15,7 +11,7 @@ import org.springframework.web.client.RestTemplate;
 
 @Service
 public class CaptchaService {
-    @Value("${recaptcha.secret}")
+    @Value("${recaptcha.v2.secret}")
     private String recaptchaSecret;
 
     @Value("${recaptcha.verify.url}")

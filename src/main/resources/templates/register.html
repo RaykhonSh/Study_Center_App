@@ -32,6 +32,7 @@
                     <form th:action="@{/register}" method="post"
                           th:object="${userDto}"
                           onsubmit="return validateForm()">
+                        <input type="hidden" name="_csrf" th:value="${_csrf.getToken()}">
                         <!-- First Name -->
                         <div class="mb-3">
                             <label for="firstName" class="form-label">First Name</label>
@@ -86,7 +87,7 @@
 <!--                        recaptcha-->
                         <div class="mb-3">
                             <div class="g-recaptcha m-3 row justify-content-center"
-                                 th:data-sitekey="${@environment.getProperty('recaptcha.key')}"></div>
+                                 th:data-sitekey="${@environment.getProperty('recaptcha.v2.key')}"></div>
                         </div>
                         <div class="text-danger" th:if="${captchaError}" th:text="${captchaError}"></div>
                         <!-- Register Button -->

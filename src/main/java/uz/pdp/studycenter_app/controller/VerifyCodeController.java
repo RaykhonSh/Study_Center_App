@@ -3,15 +3,20 @@ package uz.pdp.studycenter_app.controller;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import uz.pdp.studycenter_app.dto.UserDto;
+import uz.pdp.studycenter_app.entity.Users;
+import uz.pdp.studycenter_app.repo.UsersRepository;
+import uz.pdp.studycenter_app.service.RoleService;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @Controller
 @RequestMapping("/verification")
@@ -20,9 +25,15 @@ public class VerifyCodeController {
     private final JavaMailSenderImpl mailSender;
     private static final int MAX_ATTEMPTS = 3;
     private static final int EXPIRE_SECONDS = 60;
+    private final RoleService roleService;
+    private final PasswordEncoder passwordEncoder;
+    private final UsersRepository usersRepository;
 
-    public VerifyCodeController(JavaMailSenderImpl mailSender) {
+    public VerifyCodeController(JavaMailSenderImpl mailSender, RoleService roleService, PasswordEncoder passwordEncoder, UsersRepository usersRepository) {
         this.mailSender = mailSender;
+        this.roleService = roleService;
+        this.passwordEncoder = passwordEncoder;
+        this.usersRepository = usersRepository;
     }
 
     @GetMapping
@@ -49,6 +60,8 @@ public class VerifyCodeController {
     @PostMapping("/verify")
     @ResponseBody
     public Map<String, Object> verifyApi(@RequestBody Map<String, String> body, HttpSession session) {
+        System.out.println("📩 /verification/verify API ishladi!");
+
         String inputCode = body.get("code");
         LocalDateTime expiry = (LocalDateTime) session.getAttribute("expiry");
         Integer attemptsLeft = (Integer) session.getAttribute("attemptsLeft");
@@ -70,8 +83,26 @@ public class VerifyCodeController {
         String realCode = (String) session.getAttribute("code");
         if (realCode != null && realCode.equals(inputCode)) {
             // ro‘yxatdan o‘tkazish
-            UserDto user = (UserDto) session.getAttribute("user");
-            registerUserDto(user);
+            UserDto userDto = (UserDto) session.getAttribute("user");
+            if (userDto == null) {
+                resp.put("success", false);
+                resp.put("message", "Session expired. Please register again.");
+                return resp;
+            }
+            if (!userDto.getPassword().equals(userDto.getPasswordRepeat())) {
+                resp.put("success", false);
+                resp.put("message","Passwords do not match.");
+                return resp;
+            }
+
+            Optional<Users> byEmail = usersRepository.findByEmail(userDto.getEmail());
+            if (byEmail.isPresent()) {
+                resp.put("success", false);
+                resp.put("message", "Email already in use.");
+                return resp;
+            }
+            registerUserDto(userDto);
+
             session.removeAttribute("user");
             resp.put("success", true);
             resp.put("message", "Verified successfully. Redirecting…");
@@ -139,5 +170,13 @@ public class VerifyCodeController {
 
     private void registerUserDto(UserDto userDto) {
         // --- ro‘yxatdan o‘tkazish jarayoni ---
+        Users users = Users.builder()
+                .email(userDto.getEmail())
+                .password(passwordEncoder.encode(userDto.getPassword()))
+                .firstName(userDto.getFirstName())
+                .lastName(userDto.getLastName())
+                .roles(roleService.getSimpleRoles())
+                .build();
+        usersRepository.save(users);
     }
 }

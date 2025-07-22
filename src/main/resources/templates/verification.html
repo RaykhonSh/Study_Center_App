@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
     <meta charset="UTF-8">
     <title>Email Verification</title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -48,6 +50,9 @@
     let timeLeft = /*[[${remainingSeconds}]]*/ 60;
     let attemptsLeft = /*[[${session.attemptsLeft}]]*/ 3;
 
+    const csrfToken  = /*[[${_csrf.token}]]*/ '';
+    const csrfHeader = /*[[${_csrf.headerName}]]*/ '';
+
     const msgBox   = document.getElementById('messageBox');
     const timerEl  = document.getElementById('timer');
     const verifyBtn= document.getElementById('verifyBtn');
@@ -94,30 +99,71 @@
             return;
         }
 
-        const res = await fetch('/verification/verify', {
-            method: 'POST',
-            headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({code})
-        });
-        const data = await res.json();
-
-        msgBox.textContent = data.message;
-        codeIn.value='';
-        codeIn.focus();
-        if (data.success) {
-            window.location.href = '/login';
-            return;
-        }
-
-        // yangilash
-        attemptsLeft   = data.attemptsLeft   ?? 0;
-        timeLeft       = data.remainingSeconds ?? 0;
-        if (attemptsLeft <= 0 || timeLeft <= 0) {
-            verifyBtn.disabled = true;
-            codeIn.blur();
-        }
+        // const res = await fetch('/verification/verify', {
+        //     method: 'POST',
+        //     headers: {'Content-Type':'application/json'},
+        //     body: JSON.stringify({code})
+        // });
+        // const data = await res.json();
+        //
+        //
+        // msgBox.textContent = data.message;
+        // codeIn.value='';
+        // codeIn.focus();
+        // if (data.success) {
+        //     window.location.href = '/login';
+        //     return;
+        // }
+        //
+        // // yangilash
+        // attemptsLeft   = data.attemptsLeft   ?? 0;
+        // timeLeft       = data.remainingSeconds ?? 0;
+        // if (attemptsLeft <= 0 || timeLeft <= 0) {
+        //     verifyBtn.disabled = true;
+        //     codeIn.blur();
+        // }
+        await submitCode(code);
     });
 
+
+    // 🟩 submitCode funksiyasi shu yerga qo‘shiladi
+    async function submitCode(code) {
+        const res = await fetch('/verification/verify', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json',
+                [csrfHeader]: csrfToken
+            },
+            body: JSON.stringify({code})
+        });
+
+        const text = await res.text();   // JSON deb o‘ylamasdan, avval text ko‘ramiz
+        console.log("Server javobi:", text);
+
+        try {
+            const data = JSON.parse(text); // keyin JSONga o‘tkazamiz
+            console.log("Parsed JSON:", data);
+
+            msgBox.textContent = data.message;
+            codeIn.value='';
+            codeIn.focus();
+
+            if (data.success) {
+                window.location.href = '/cabinet';
+                return;
+            }
+
+            attemptsLeft   = data.attemptsLeft   ?? 0;
+            timeLeft       = data.remainingSeconds ?? 0;
+            if (attemptsLeft <= 0 || timeLeft <= 0) {
+                verifyBtn.disabled = true;
+                codeIn.blur();
+            }
+
+        } catch (e) {
+            console.error("JSON parse error:", e);
+            msgBox.textContent = "Server error: invalid response.";
+        }
+    }
     // — Resend tugmasi AJAX
     resendBtn.addEventListener('click', async () => {
         const res = await fetch('/verification/resend', { method:'POST' });
